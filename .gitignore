@@ -160,4 +160,5 @@ cython_debug/
 #.idea/
 Geometry/
 moco/control_solutions/
+logs/
 .DS_STORE
