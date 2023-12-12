@@ -37,8 +37,8 @@ class CubemarsMotor:
     def __init__(
         self,
         motor_type: Literal["AK60-6", "AK70-10"],
+        frequency: int,
         logging: bool = False,
-        frequency: int = 200,
     ) -> None:
         self.type = motor_type
         self.params = MOTOR_PARAMS[motor_type]
@@ -57,7 +57,6 @@ class CubemarsMotor:
 
         self.position_buffer = [0] * self.buffer_size
         self.velocity_buffer = [0] * self.buffer_size
-        self.torque_buffer = [0] * self.buffer_size
 
         if self.logging_on:
             self._setup_log_file()
@@ -244,12 +243,8 @@ class CubemarsMotor:
         Returns:
             tuple: _description_
         """
-        # Apply a simple moving average filter to the desired torque
-        self.torque_buffer[self.buffer_index] = desired_torque
-        filtered_torque = sum(self.torque_buffer) / self.buffer_size
-
         # Clip the filtered torque to the torque limits
-        filtered_torque = np.clip(filtered_torque, self.params['T_min'], self.params['T_max'])
+        filtered_torque = np.clip(desired_torque, self.params['T_min'], self.params['T_max'])
 
         # Hard code safety
         if safety:
@@ -291,23 +286,21 @@ class CubemarsMotor:
             # Update the circular buffers
             self.position_buffer[self.buffer_index] = p
             self.velocity_buffer[self.buffer_index] = v
-            self.torque_buffer[self.buffer_index] = t
 
             self.buffer_index = (self.buffer_index + 1) % self.buffer_size
 
             # Calculate the moving average position and velocity
             avg_position = sum(self.position_buffer) / self.buffer_size
             avg_velocity = sum(self.velocity_buffer) / self.buffer_size
-            avg_torque = sum(self.torque_buffer) / self.buffer_size
 
             self.position = avg_position
             self.velocity = avg_velocity
-            self.measured_torque = avg_torque
+            self.torque = t
 
             if self.logging_on:
                 self.csv_writer.writerow(
                     [self._last_update_time - self._start_time]
-                    + [self.position, self.velocity, self.measured_torque]
+                    + [self.position, self.velocity, self.torque]
                 )
 
         except AttributeError as e:

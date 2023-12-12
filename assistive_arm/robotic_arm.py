@@ -10,13 +10,25 @@ class AssistiveArm:
         ]
 
 
-def calculate_ee_pos(motor_1: CubemarsMotor, motor_2: CubemarsMotor):
+def calculate_ee_pos(theta_1: CubemarsMotor, theta_2: CubemarsMotor):
     L1 = 0.44
     L2 = 0.41
 
     P_EE = np.array([
-        L1*np.cos(motor_1.position) + L2*np.cos(motor_1.position + motor_2.position),
-        L1*np.sin(motor_1.position) + L2*np.sin(motor_1.position + motor_2.position),
-        motor_1.position + motor_2.position])
+        L1*np.cos(theta_1) + L2*np.cos(theta_1 + theta_2),
+        L1*np.sin(theta_1) + L2*np.sin(theta_1 + theta_2),
+        theta_1 + theta_2])
 
     return P_EE
+
+def get_jacobian(theta_1: float, theta_2: float):
+    l1 = 0.44
+    l2 = 0.41
+
+    jacobian = np.array([
+        [-l1*np.sin(theta_1)-l2*np.sin(theta_1+theta_2),
+         -l2*np.sin(theta_1+theta_2)],
+        [l1*np.cos(theta_1)+l2*np.cos(theta_1+theta_2),
+        l2*np.cos(theta_1+theta_2)]])
+    
+    return jacobian
