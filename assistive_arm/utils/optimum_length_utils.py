@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from assistive_arm.robotic_arm import get_jacobian
 
 def get_rotation_matrix(degrees: float) -> np.array:
     return np.array(
@@ -13,23 +14,6 @@ def get_rotation_matrix(degrees: float) -> np.array:
 
 def check_theta(series, theta_lims):
     return series.apply(lambda x: theta_lims[0] <= x <= theta_lims[1]).all()
-
-def get_jacobian(l1: float, l2: float, N: int, theta_1: float, theta_2: float) -> np.array:
-    jacobian = np.array(
-        [
-            [
-                -l1 * np.sin(theta_1) - l2 * np.sin(theta_1 + theta_2),
-                -l2 * np.sin(theta_1 + theta_2),
-            ],
-            [
-                l1 * np.cos(theta_1) + l2 * np.cos(theta_1 + theta_2),
-                l2 * np.cos(theta_1 + theta_2),
-            ]
-        ]
-    )
-
-    return np.transpose(jacobian, (2, 0, 1))  # Bring jacobian to correct shape
-
 
 def compute_torque_profiles(
     l1: float, l2: float, F: pd.DataFrame, position: pd.DataFrame
