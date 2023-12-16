@@ -15,6 +15,23 @@ def get_rotation_matrix(degrees: float) -> np.array:
 def check_theta(series, theta_lims):
     return series.apply(lambda x: theta_lims[0] <= x <= theta_lims[1]).all()
 
+def get_jacobian(l1: float, l2: float, N: int, theta_1: float, theta_2: float) -> np.array:
+    jacobian = np.array(
+        [
+            [
+                -l1 * np.sin(theta_1) - l2 * np.sin(theta_1 + theta_2),
+                -l2 * np.sin(theta_1 + theta_2),
+            ],
+            [
+                l1 * np.cos(theta_1) + l2 * np.cos(theta_1 + theta_2),
+                l2 * np.cos(theta_1 + theta_2),
+            ]
+        ]
+    )
+
+    return jacobian
+
+
 def compute_torque_profiles(
     l1: float, l2: float, F: pd.DataFrame, position: pd.DataFrame
 ) -> tuple:
@@ -59,9 +76,20 @@ def compute_torque_profiles(
     F_rot = -(F @ rotate_forces).drop(2, axis=1)
     F_rot = F_rot.to_numpy().reshape(N, 2, 1)
 
-    jacobian_T = jacobian.transpose((0, 2, 1))
-
-    torques = (jacobian_T @ F_rot).squeeze()
+    torques = (jacobian.T @ F_rot).squeeze()
     torques = pd.DataFrame(torques, columns=["tau_1", "tau_2"])
 
     return torques, thetas, jacobian
+
+
+def interpolate_dataframe(df: pd.DataFrame, desired_frequency: int=200):
+    df_index = df.index
+    df_index_new = pd.Index(np.arange(df_index.min(), df_index.max(), 1/desired_frequency), name="Time")
+
+    df_interpolated = df.reindex(df_index_new, method="nearest").interpolate(method="polynomial", order=2)
+
+    return df_interpolated
+
+def smooth_dataframe(df, window_size):
+    df_smoothed = df.copy().rolling(window=window_size, min_periods=1, center=True).mean()
+    return df_smoothed
